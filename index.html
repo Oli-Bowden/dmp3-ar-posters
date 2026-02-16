@@ -5,7 +5,7 @@
   <title>DMP3 AR Experience</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
-  <!-- A-Frame + MindAR -->
+  <!-- A-Frame + MindAR (correct script tags) -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
@@ -65,37 +65,41 @@
   <a-scene
     mindar-image="imageTargetSrc: ./assets/targets.mind; filterMinCF: 0.0001; filterBeta: 0.001;"
     vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: true"
-    loading-screen="enabled: false">
+    device-orientation-permission-ui="enabled: true">
 
-    <!-- Preload assets (restore “instant show” on scan) -->
-    <a-assets timeout="20000">
-      <!-- Poster 1 video: use metadata so it won’t block too much -->
-      <video id="videoAsset" src="./assets/video.mp4" preload="metadata" playsinline crossorigin="anonymous"></video>
+    <a-assets timeout="45000">
+      <!-- Poster 1 video -->
+      <video id="videoAsset"
+             src="./assets/video.mp4"
+             preload="auto"
+             playsinline
+             crossorigin="anonymous"></video>
 
-      <!-- Poster 2 model: preload to be instant when scanned -->
-      <a-asset-item id="modelAsset" src="./assets/quantum-model-shaded.glb" crossorigin="anonymous"></a-asset-item>
+      <!-- Poster 2 model -->
+      <a-asset-item id="modelAsset"
+                    src="./assets/quantum-model-shaded.glb"
+                    crossorigin="anonymous"></a-asset-item>
     </a-assets>
-
-    <!-- Simple lights help PBR on mobile -->
-    <a-entity light="type: ambient; intensity: 1.05"></a-entity>
-    <a-entity light="type: directional; intensity: 1.1; position: 0 1 1"></a-entity>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Poster 1 (video) -->
+    <!-- Poster 1 -->
     <a-entity mindar-image-target="targetIndex: 0" id="targetP1">
-      <a-video id="arVideo" src="#videoAsset" width="1.6" height="0.9" position="0 0 0" visible="false"></a-video>
+      <a-video id="arVideo"
+               src="#videoAsset"
+               width="1.6"
+               height="0.9"
+               position="0 0 0"
+               visible="false"></a-video>
     </a-entity>
 
-    <!-- Poster 2 (preloaded model + rotate/pinch on rig) -->
+    <!-- Poster 2 (auto show model, no UI, no audio) -->
     <a-entity mindar-image-target="targetIndex: 1" id="targetP2">
       <a-entity id="modelRig"
                 position="0 -0.05 0.06"
                 rotation="0 0 0"
                 scale="0.7 0.7 0.7"
-                visible="false"
-                touch-transform="minScale:0.2; maxScale:3; rotateFactor:0.01">
+                visible="false">
         <a-entity id="modelEntity" gltf-model="#modelAsset"></a-entity>
       </a-entity>
     </a-entity>
@@ -119,94 +123,6 @@
 
   <!-- =================== SCRIPT =================== -->
   <script>
-    /******** Touch gestures: 1-finger rotate, 2-finger pinch to scale ********/
-    AFRAME.registerComponent('touch-transform', {
-      schema: { rotateFactor: {default: 0.01}, minScale: {default: 0.2}, maxScale: {default: 3} },
-      init () {
-        this.dragging = false;
-        this.prevX = 0; this.prevY = 0;
-        this.pinchStartDist = null;
-        this.startScale = this.el.object3D.scale.x;
-
-        this._onStart = e => this._start(e);
-        this._onMove  = e => this._move(e);
-        this._onEnd   = e => this._end(e);
-
-        window.addEventListener('touchstart', this._onStart, {passive:false});
-        window.addEventListener('touchmove',  this._onMove,  {passive:false});
-        window.addEventListener('touchend',   this._onEnd,   {passive:false});
-        window.addEventListener('touchcancel',this._onEnd,   {passive:false});
-      },
-      remove(){
-        window.removeEventListener('touchstart', this._onStart);
-        window.removeEventListener('touchmove',  this._onMove);
-        window.removeEventListener('touchend',   this._onEnd);
-        window.removeEventListener('touchcancel',this._onEnd);
-      },
-      _visible(){ return this.el.object3D.visible; },
-      _isUI(t){
-        return t && t.closest && t.closest('.btn, .cta-pill, #closeBtn, #audioOverlay, #restartVideoBtn_p1');
-      },
-      _dist(a,b){ return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); },
-
-      _start(e){
-        if (!this._visible() || this._isUI(e.target)) return;
-
-        if (e.touches.length === 1){
-          this.dragging = true;
-          this.prevX = e.touches[0].clientX;
-          this.prevY = e.touches[0].clientY;
-          e.preventDefault();
-        } else if (e.touches.length === 2){
-          this.pinchStartDist = this._dist(e.touches[0], e.touches[1]);
-          this.startScale = this.el.object3D.scale.x;
-          e.preventDefault();
-        }
-      },
-
-      _move(e){
-        if (!this._visible() || this._isUI(e.target)) return;
-
-        // Pinch scale
-        if (e.touches.length === 2 && this.pinchStartDist){
-          const d = this._dist(e.touches[0], e.touches[1]);
-          let s = this.startScale * (d / this.pinchStartDist);
-          s = Math.min(Math.max(s, this.data.minScale), this.data.maxScale);
-          this.el.object3D.scale.set(s, s, s);
-          e.preventDefault();
-          return;
-        }
-
-        // One-finger rotate
-        if (this.dragging && e.touches.length === 1){
-          const x = e.touches[0].clientX, y = e.touches[0].clientY;
-          const dx = x - this.prevX, dy = y - this.prevY;
-          this.prevX = x; this.prevY = y;
-
-          const r = this.el.object3D.rotation;
-          r.y += dx * this.data.rotateFactor;  // yaw
-          r.x += dy * this.data.rotateFactor;  // pitch
-          const maxX = Math.PI / 2, minX = -Math.PI / 2;
-          if (r.x > maxX) r.x = maxX;
-          if (r.x < minX) r.x = minX;
-
-          e.preventDefault();
-        }
-      },
-
-      _end(e){
-        if (!this._visible()) return;
-        if (e.touches.length < 2){
-          this.pinchStartDist = null;
-          this.startScale = this.el.object3D.scale.x;
-        }
-        if (e.touches.length === 0){
-          this.dragging = false;
-        }
-      }
-    });
-
-    /*************************** Main logic ***************************/
     window.onload = () => {
       /* ELEMENTS */
       const video = document.querySelector('#videoAsset');
@@ -230,44 +146,19 @@
       const show = el => el.classList.remove('hidden');
       const hide = el => el.classList.add('hidden');
 
-      /* MODEL LOADED: recenter to pivot center + keep visible & opaque */
-      modelEntity.addEventListener('model-loaded', e => {
-        const THREE = AFRAME.THREE;
-        const obj = e.detail.model || modelEntity.getObject3D('mesh');
-
-        if (obj) {
-          try {
-            const box = new THREE.Box3().setFromObject(obj);
-            if (!box.isEmpty()){
-              const center = new THREE.Vector3();
-              box.getCenter(center);
-              obj.position.sub(center);  // rotate around model center
-            }
-          } catch (err) {
-            console.warn('[Model] recenter skipped:', err);
-          }
-
-          // Keep visible & robust on iOS
-          obj.traverse(n=>{
-            if (n.isMesh) {
-              n.frustumCulled = false;
-              if (n.material) {
-                const mats = Array.isArray(n.material) ? n.material : [n.material];
-                mats.forEach(m => { m.transparent=false; m.opacity=1; m.side=THREE.DoubleSide; });
-              }
-            }
-          });
-        }
+      /* MODEL LOADED: show immediately when available */
+      modelEntity.addEventListener('model-loaded', () => {
+        modelRig.setAttribute('visible', true);
       });
 
       modelEntity.addEventListener('model-error', (e) => {
         console.error('[MODEL ERROR]', e.detail);
       });
 
-      /* AUDIO UNLOCK (Poster 1 video) */
+      /* AUDIO UNLOCK */
       audioOverlay.addEventListener('click', () => {
         video.muted = false;
-        video.play().then(()=>video.pause()).catch(()=>{});
+        video.play().then(() => video.pause()).catch(()=>{});
         audioOverlay.style.display = 'none';
       });
 
@@ -316,10 +207,9 @@
         updateP1();
       });
 
-      /* ===== Poster 2 (preloaded model: instant show on scan) ===== */
+      /* ===== Poster 2 (Model auto-show) ===== */
       targetP2.addEventListener('targetFound', () => {
-        // Make sure any overlay isn’t blocking touches
-        audioOverlay.style.display = 'none';
+        // If model already loaded, ensure it's visible when target is found
         modelRig.setAttribute('visible', true);
       });
 
