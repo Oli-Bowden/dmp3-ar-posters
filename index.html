@@ -5,9 +5,9 @@
   <title>DMP3 AR Experience</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
-  <!-- A-Frame + MindAR -->
-  https://aframe.io/releases/1.4.2/aframe.min.js</script>
-  https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js</script>
+  <!-- A-Frame + MindAR (CORRECT script tags) -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
@@ -73,40 +73,33 @@
     <!-- Preload assets with proper IDs -->
     <a-assets timeout="45000">
       <!-- Poster 1 video -->
-      ./assets/video.mp4</video>
+      <video id="videoAsset" src="./assets/video.mp4" preload="auto" playsinline crossorigin="anonymous"></video>
 
       <!-- Poster 2 model -->
-      ./assets/quantum-model-shaded.glb</a-asset-item>
+      <a-asset-item id="modelAsset" src="./assets/quantum-model-shaded.glb" crossorigin="anonymous"></a-asset-item>
 
       <!-- Poster 2 voiceover -->
-      ./assets/quantum-voiceover.mp3</audio>
+      <audio id="voiceAsset" src="./assets/quantum-voiceover.mp3" preload="auto" crossorigin="anonymous"></audio>
     </a-assets>
 
     <!-- Lighting helps visibility on mobile -->
     <a-entity light="type: ambient; intensity: 1.05"></a-entity>
     <a-entity light="type: directional; intensity: 1.1; position: 0 1 1"></a-entity>
 
-    <!-- Camera with a center-anchored rig (for the “centered” look) -->
-    <a-camera id="mainCam" position="0 0 0" look-controls="enabled: false">
-      <!-- Centered model rig (controlled by stick-to-camera) -->
-      <a-entity id="modelRigCenter"
-                position="0 0 0"
-                rotation="0 0 0"
-                scale="1 1 1"
-                visible="false"
-                stick-to-camera="offsetX: 0; offsetY: -0.10; offsetZ: -0.6">
-        <a-entity gltf-model="#modelAsset"></a-entity>
-      </a-entity>
-    </a-camera>
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <!-- Poster 1 (video plane) -->
     <a-entity mindar-image-target="targetIndex: 0" id="targetP1">
-      #videoAsset</a-video>
+      <a-video id="arVideo" src="#videoAsset" width="1.6" height="0.9" position="0 0 0" visible="false"></a-video>
     </a-entity>
 
-    <!-- Poster 2 (keep original poster-anchored rig, but we’ll hide it when using centered mode) -->
+    <!-- Poster 2 (model in default state; slight Y/Z offset to “look” more centered) -->
     <a-entity mindar-image-target="targetIndex: 1" id="targetP2">
-      <a-entity id="modelRig" position="0 0 0" rotation="0 0 0" scale="1 1 1" visible="false">
+      <a-entity id="modelRig"
+                position="0 -0.10 0.05"
+                rotation="0 0 0"
+                scale="1 1 1"
+                visible="false">
         <a-entity id="modelEntity" gltf-model="#modelAsset"></a-entity>
       </a-entity>
     </a-entity>
@@ -140,59 +133,18 @@
   <div id="closeBtn" class="hidden">✕</div>
   <div id="audioOverlay">Tap to Enable Sound</div>
 
-  <!-- =================== Stick-to-camera component =================== -->
-  <script>
-    // Keeps an entity at a fixed offset relative to the camera (screen-centered effect)
-    AFRAME.registerComponent('stick-to-camera', {
-      schema: { offsetX: {default: 0}, offsetY: {default: -0.10}, offsetZ: {default: -0.6} },
-      init() {
-        this.cam = this.el.sceneEl && this.el.sceneEl.camera && this.el.sceneEl.camera.el
-          ? this.el.sceneEl.camera.el
-          : document.querySelector('a-camera, [camera]');
-        this.tmp = new THREE.Vector3();
-        this.forward = new THREE.Vector3();
-        this.right = new THREE.Vector3();
-        this.up = new THREE.Vector3();
-      },
-      tick() {
-        if (!this.cam) return;
-        const camObj = this.cam.object3D;
-        const obj = this.el.object3D;
-
-        // Camera basis vectors
-        this.forward.set(0, 0, -1).applyQuaternion(camObj.quaternion);
-        this.right.set(1, 0,  0).applyQuaternion(camObj.quaternion);
-        this.up.set(0, 1,  0).applyQuaternion(camObj.quaternion);
-
-        const camPos = camObj.getWorldPosition(this.tmp.set(0,0,0));
-        const worldPos = this.tmp
-          .copy(camPos)
-          .add(this.right.multiplyScalar(this.data.offsetX))
-          .add(this.up.multiplyScalar(this.data.offsetY))
-          .add(this.forward.multiplyScalar(this.data.offsetZ));
-
-        obj.position.copy(worldPos);
-        obj.quaternion.copy(camObj.quaternion); // face same direction as camera
-      }
-    });
-  </script>
-
   <!-- =================== SCRIPT =================== -->
   <script>
     window.onload = () => {
-      // Toggle this if you ever want to revert (false = poster-anchored, true = centered)
-      const USE_CENTERED = true;
-
       /* ELEMENTS */
       const video   = document.querySelector('#videoAsset');
       const arVideo = document.querySelector('#arVideo');
 
       const voice   = document.querySelector('#voiceAsset');
 
-      const modelRigCenter = document.querySelector('#modelRigCenter');
-      const modelRig       = document.querySelector('#modelRig'); // poster-anchored
-      const targetP1       = document.querySelector('#targetP1');
-      const targetP2       = document.querySelector('#targetP2');
+      const modelRig = document.querySelector('#modelRig');
+      const targetP1 = document.querySelector('#targetP1');
+      const targetP2 = document.querySelector('#targetP2');
 
       const playCTA     = document.getElementById('playVideoCTA_p1');
       const playBtnP1   = document.getElementById('togglePlayPauseBtn_p1');
@@ -208,7 +160,7 @@
 
       const restartVoiceBtn = document.getElementById('restartVoiceBtn_p2');
 
-      const closeBtn    = document.getElementById('closeBtn');
+      const closeBtn   = document.getElementById('closeBtn');
       const audioOverlay = document.getElementById('audioOverlay');
 
       const show = el => el && el.classList.remove('hidden');
@@ -234,14 +186,12 @@
         // Show only Play CTA initially; DO NOT show Restart yet
         show(playCTA);
         hide(playBtnP1);
-        hide(restartVideoBtn);  // will appear only after first play
+        hide(restartVideoBtn);  // appears only after first play
 
         show(closeBtn);
 
-        // Hide P2 UI & ensure centered model hidden if switching from P2
+        // Hide P2 UI
         hide(tellCTA); hide(playBtnP2); hide(restartVoiceBtn);
-        modelRigCenter.setAttribute('visible', false);
-        modelRig.setAttribute('visible', false);
       });
 
       targetP1.addEventListener('targetLost', () => {
@@ -281,49 +231,33 @@
         updateP1();
       });
 
-      /* ===== Poster 2 (Model “centered” + voiceover UI) ===== */
+      /* ===== Poster 2 (Model default + voiceover UI) ===== */
       targetP2.addEventListener('targetFound', () => {
-        // Show the centered model or the poster-anchored one (based on toggle)
-        if (USE_CENTERED) {
-          modelRigCenter.setAttribute('visible', true);
-          modelRig.setAttribute('visible', false);
-        } else {
-          modelRigCenter.setAttribute('visible', false);
-          modelRig.setAttribute('visible', true);
-        }
+        // Model shows automatically in default (with small Y/Z offset to “look” centered)
+        modelRig.setAttribute('visible', true);
 
-        // Voiceover UI: show Tell me more only (no Restart Audio yet)
+        // Show P2 voiceover controls
         show(tellCTA);
-        hide(playBtnP2);
-        hide(restartVoiceBtn);   // will appear only after voice starts
+        hide(playBtnP2);      // Play/Pause appears after Tell me more
+        hide(restartVoiceBtn); // appears only after voice started
+        show(closeBtn);
 
         // Hide Poster 1 UI
         hide(playCTA); hide(playBtnP1); hide(restartVideoBtn);
-
-        show(closeBtn);
       });
 
       targetP2.addEventListener('targetLost', () => {
-        // Stop voice and hide P2 UI
+        // Stop voiceover and hide P2 UI
         voice.pause();
         voice.currentTime = 0;
 
-        // Hide model rigs
-        modelRigCenter.setAttribute('visible', false);
         modelRig.setAttribute('visible', false);
-
         hide(tellCTA); hide(playBtnP2); hide(restartVoiceBtn);
         hide(closeBtn);
       });
 
-      // Tell me more -> start voice, then reveal Play/Pause AND Restart Audio
-      const updateP2 = () => {
-        const paused = voice.paused;
-        iconPlayP2.style.display = paused ? 'block' : 'none';
-        iconPauseP2.style.display = paused ? 'none' : 'block';
-      };
-
-      document.getElementById('tellMeMoreBtn_p2').addEventListener('click', () => {
+      // Tell me more => start voiceover, swap to Play/Pause, show Restart Audio
+      tellCTA.addEventListener('click', () => {
         voice.play().then(() => {
           hide(tellCTA);
           show(playBtnP2);
@@ -333,7 +267,12 @@
       });
 
       // Play/Pause for voiceover; if this starts playback, also show Restart
-      document.getElementById('togglePlayPauseBtn_p2').addEventListener('click', () => {
+      const updateP2 = () => {
+        const paused = voice.paused;
+        iconPlayP2.style.display = paused ? 'block' : 'none';
+        iconPauseP2.style.display = paused ? 'none' : 'block';
+      };
+      playBtnP2.addEventListener('click', () => {
         const wasPaused = voice.paused;
         if (wasPaused) {
           voice.play().then(()=>{ show(restartVoiceBtn); }).catch(()=>{});
@@ -344,7 +283,7 @@
       });
 
       // Restart Audio pill (shows only after voice has started)
-      document.getElementById('restartVoiceBtn_p2').addEventListener('click', () => {
+      restartVoiceBtn.addEventListener('click', () => {
         voice.pause();
         voice.currentTime = 0;
         voice.play().catch(()=>{});
@@ -360,7 +299,6 @@
 
         // Poster 2
         voice.pause(); voice.currentTime = 0;
-        modelRigCenter.setAttribute('visible', false);
         modelRig.setAttribute('visible', false);
         hide(tellCTA); hide(playBtnP2); hide(restartVoiceBtn);
 
