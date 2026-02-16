@@ -5,7 +5,7 @@
   <title>DMP3 AR Experience</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
-  <!-- A-Frame + MindAR (correct script tags) -->
+  <!-- A-Frame + MindAR -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
@@ -93,13 +93,14 @@
                visible="false"></a-video>
     </a-entity>
 
-    <!-- Poster 2 (auto show model, no UI, no audio) -->
+    <!-- Poster 2 (auto show model, scalable + rotatable) -->
     <a-entity mindar-image-target="targetIndex: 1" id="targetP2">
       <a-entity id="modelRig"
                 position="0 -0.05 0.06"
                 rotation="0 0 0"
                 scale="0.7 0.7 0.7"
-                visible="false">
+                visible="false"
+                touch-transform="minScale:0.2; maxScale:3; rotateFactor:0.01">
         <a-entity id="modelEntity" gltf-model="#modelAsset"></a-entity>
       </a-entity>
     </a-entity>
@@ -123,6 +124,97 @@
 
   <!-- =================== SCRIPT =================== -->
   <script>
+    /******** Touch gestures: 1-finger rotate, 2-finger pinch to scale ********/
+    AFRAME.registerComponent('touch-transform', {
+      schema: { rotateFactor: {default: 0.01}, minScale: {default: 0.2}, maxScale: {default: 3} },
+      init () {
+        this.dragging = false;
+        this.prevX = 0; this.prevY = 0;
+        this.pinchStartDist = null;
+        this.startScale = this.el.object3D.scale.x;
+
+        // Bind handlers
+        this._onStart = e => this._start(e);
+        this._onMove  = e => this._move(e);
+        this._onEnd   = e => this._end(e);
+
+        window.addEventListener('touchstart', this._onStart, {passive:false});
+        window.addEventListener('touchmove',  this._onMove,  {passive:false});
+        window.addEventListener('touchend',   this._onEnd,   {passive:false});
+        window.addEventListener('touchcancel',this._onEnd,   {passive:false});
+      },
+      remove(){
+        window.removeEventListener('touchstart', this._onStart);
+        window.removeEventListener('touchmove',  this._onMove);
+        window.removeEventListener('touchend',   this._onEnd);
+        window.removeEventListener('touchcancel',this._onEnd);
+      },
+      _visible(){ return this.el.object3D.visible; },
+      _isUI(t){
+        // Ignore gestures when touching UI controls
+        return t && t.closest && t.closest('.btn, .cta-pill, #closeBtn, #audioOverlay, #restartVideoBtn_p1');
+      },
+      _dist(a,b){ return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); },
+
+      _start(e){
+        if (!this._visible() || this._isUI(e.target)) return;
+
+        if (e.touches.length === 1){
+          this.dragging = true;
+          this.prevX = e.touches[0].clientX;
+          this.prevY = e.touches[0].clientY;
+          e.preventDefault();
+        } else if (e.touches.length === 2){
+          this.pinchStartDist = this._dist(e.touches[0], e.touches[1]);
+          this.startScale = this.el.object3D.scale.x;
+          e.preventDefault();
+        }
+      },
+
+      _move(e){
+        if (!this._visible() || this._isUI(e.target)) return;
+
+        // Pinch scale
+        if (e.touches.length === 2 && this.pinchStartDist){
+          const d = this._dist(e.touches[0], e.touches[1]);
+          let s = this.startScale * (d / this.pinchStartDist);
+          s = Math.min(Math.max(s, this.data.minScale), this.data.maxScale);
+          this.el.object3D.scale.set(s, s, s);
+          e.preventDefault();
+          return;
+        }
+
+        // One-finger rotate
+        if (this.dragging && e.touches.length === 1){
+          const x = e.touches[0].clientX, y = e.touches[0].clientY;
+          const dx = x - this.prevX, dy = y - this.prevY;
+          this.prevX = x; this.prevY = y;
+
+          const r = this.el.object3D.rotation;
+          r.y += dx * this.data.rotateFactor;  // yaw
+          r.x += dy * this.data.rotateFactor;  // pitch
+          // Clamp vertical tilt to ±90°
+          const maxX = Math.PI / 2, minX = -Math.PI / 2;
+          if (r.x > maxX) r.x = maxX;
+          if (r.x < minX) r.x = minX;
+
+          e.preventDefault();
+        }
+      },
+
+      _end(e){
+        if (!this._visible()) return;
+        if (e.touches.length < 2){
+          this.pinchStartDist = null;
+          this.startScale = this.el.object3D.scale.x;
+        }
+        if (e.touches.length === 0){
+          this.dragging = false;
+        }
+      }
+    });
+
+    /*************************** Main logic ***************************/
     window.onload = () => {
       /* ELEMENTS */
       const video = document.querySelector('#videoAsset');
@@ -146,8 +238,26 @@
       const show = el => el.classList.remove('hidden');
       const hide = el => el.classList.add('hidden');
 
-      /* MODEL LOADED: show immediately when available */
-      modelEntity.addEventListener('model-loaded', () => {
+      /* MODEL LOADED: recenter to pivot center and show */
+      modelEntity.addEventListener('model-loaded', e => {
+        const THREE = AFRAME.THREE;
+        const obj = e.detail.model || modelEntity.getObject3D('mesh');
+
+        if (obj) {
+          // Recenter pivot to model's bounding-box center (rotate around center)
+          try {
+            const box = new THREE.Box3().setFromObject(obj);
+            if (!box.isEmpty()){
+              const center = new THREE.Vector3();
+              box.getCenter(center);
+              obj.position.sub(center);
+            }
+          } catch (err) {
+            console.warn('[Model] recenter skipped:', err);
+          }
+        }
+
+        // Ensure visible once ready (Poster 2 auto-show)
         modelRig.setAttribute('visible', true);
       });
 
@@ -155,10 +265,10 @@
         console.error('[MODEL ERROR]', e.detail);
       });
 
-      /* AUDIO UNLOCK */
+      /* AUDIO UNLOCK (Poster 1 video) */
       audioOverlay.addEventListener('click', () => {
         video.muted = false;
-        video.play().then(() => video.pause()).catch(()=>{});
+        video.play().then(()=>video.pause()).catch(()=>{});
         audioOverlay.style.display = 'none';
       });
 
@@ -209,7 +319,6 @@
 
       /* ===== Poster 2 (Model auto-show) ===== */
       targetP2.addEventListener('targetFound', () => {
-        // If model already loaded, ensure it's visible when target is found
         modelRig.setAttribute('visible', true);
       });
 
