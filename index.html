@@ -6,61 +6,108 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
   <!-- A-Frame + MindAR -->
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  https://aframe.io/releases/1.4.2/aframe.min.js</script>
+  https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js</script>
 
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
     canvas.a-canvas, .a-canvas { touch-action: none !important; }
+    .hidden { display: none !important; }
 
     .btn {
       position: fixed;
-      bottom: 20px; left: 20px;
-      width: 70px; height: 70px;
-      background: #1e5df8; border-radius: 50%;
-      z-index: 1000; user-select: none; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
+      bottom: 20px;
+      left: 20px;
+      width: 70px;
+      height: 70px;
+      background: #1e5df8;
+      border-radius: 50%;
+      z-index: 1000;
+      user-select: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       box-shadow: 0 8px 24px rgba(30, 93, 248, 0.35);
       transition: transform 0.1s ease;
-      touch-action: manipulation; pointer-events: auto;
+      touch-action: manipulation;
+      pointer-events: auto;
     }
     .btn:active { transform: scale(0.96); }
     .btn svg { width: 34px; height: 34px; fill: white; }
 
     .cta-pill {
       position: fixed;
-      left: 50%; transform: translateX(-50%);
+      left: 50%;
+      transform: translateX(-50%);
       bottom: 20px;
-      background: #1e5df8; color: #fff; border-radius: 30px;
-      padding: 14px 22px; font-size: 16px; font-weight: 600;
-      z-index: 1000; cursor: pointer; user-select: none;
+      background: #1e5df8;
+      color: #fff;
+      border-radius: 30px;
+      padding: 14px 22px;
+      font-size: 16px;
+      font-weight: 600;
+      z-index: 1000;
+      cursor: pointer;
+      user-select: none;
       box-shadow: 0 8px 24px rgba(30, 93, 248, 0.35);
-      white-space: nowrap; pointer-events: auto; touch-action: manipulation;
+      white-space: nowrap;
+      pointer-events: auto;
+      touch-action: manipulation;
     }
 
     #resetModelBtn_p2, #restartVideoBtn_p1 {
-      position: fixed; top: 20px; left: 20px;
-      background: #1e5df8; color: #fff; border-radius: 30px;
-      padding: 10px 14px; font-size: 14px; font-weight: 600;
-      z-index: 1000; cursor: pointer; user-select: none;
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: #1e5df8;
+      color: #fff;
+      border-radius: 30px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 1000;
+      cursor: pointer;
+      user-select: none;
       box-shadow: 0 8px 24px rgba(30, 93, 248, 0.35);
-      white-space: nowrap; pointer-events: auto; touch-action: manipulation;
+      white-space: nowrap;
+      pointer-events: auto;
+      touch-action: manipulation;
     }
 
-    .hidden { display: none !important; }
-
     #closeBtn {
-      position: fixed; top: 20px; right: 20px;
-      width: 55px; height: 55px; background: rgba(0,0,0,0.7);
-      color: white; font-size: 26px; text-align: center; line-height: 55px;
-      border-radius: 50%; z-index: 1000; cursor: pointer; pointer-events: auto; user-select: none; touch-action: manipulation;
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 55px;
+      height: 55px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      font-size: 26px;
+      text-align: center;
+      line-height: 55px;
+      border-radius: 50%;
+      z-index: 1000;
+      cursor: pointer;
+      pointer-events: auto;
+      user-select: none;
+      touch-action: manipulation;
     }
 
     #audioOverlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-      color: white; display: flex; align-items: center; justify-content: center;
-      font-size: 22px; z-index: 2000; cursor: pointer; pointer-events: auto;
-      padding: 24px; text-align: center;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      z-index: 2000;
+      cursor: pointer;
+      pointer-events: auto;
+      padding: 24px;
+      text-align: center;
     }
   </style>
 </head>
@@ -73,32 +120,31 @@
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: true">
 
-    <a-assets>
+    <a-assets timeout="20000">
       <!-- Poster 1 video -->
-      <video id="videoAsset" src="./assets/video.mp4" preload="auto" playsinline crossorigin="anonymous"></video>
+      ./assets/video.mp4</video>
 
-      <!-- Poster 2 model -->
-      <a-asset-item id="modelAsset" src="./assets/quantum-model-shaded.glb" crossorigin="anonymous"></a-asset-item>
+      <!-- Poster 2 model (preloaded for instant show) -->
+      ./assets/quantum-model-shaded.glb</a-asset-item>
 
       <!-- Poster 2 voiceover -->
-      <audio id="voiceAsset" src="./assets/quantum-voiceover.mp3" preload="auto" crossorigin="anonymous"></audio>
+      ./assets/quantum-voiceover.mp3</audio>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <!-- Poster 1 -->
     <a-entity mindar-image-target="targetIndex: 0" id="targetP1">
-      <a-video id="arVideo" src="#videoAsset" width="1.6" height="0.9" position="0 0 0" visible="false"></a-video>
+      #videoAsset</a-video>
     </a-entity>
 
-    <!-- Poster 2 -->
+    <!-- Poster 2: model auto-visible on scan (no gestures, no Show CTA) -->
     <a-entity mindar-image-target="targetIndex: 1" id="targetP2">
       <a-entity id="modelRig"
                 position="0 -0.05 0"
                 rotation="0 0 0"
                 scale="0.7 0.7 0.7"
-                visible="false"
-                touch-transform="minScale:0.2; maxScale:3; rotateFactor:0.01">
+                visible="false">
         <a-entity id="modelEntity" gltf-model="#modelAsset"></a-entity>
       </a-entity>
     </a-entity>
@@ -111,19 +157,18 @@
   <div id="playVideoCTA_p1" class="cta-pill hidden">Play video</div>
   <div id="restartVideoBtn_p1" class="hidden">Restart video</div>
 
-  <div id="togglePlayPauseBtn_p1" class="btn hidden">
+  <div id="togglePlayPauseBtn_p1" class="btn hidden" role="button" aria-label="Play/Pause video">
     <svg id="iconPlay_p1" viewBox="0 0 100 100"><polygon points="30,20 80,50 30,80"></polygon></svg>
-    <svg id="iconPause_p1" viewBox="0 0 100 100" style="display:none;">
+    <svg id="iconPause_p1" style="display:none;" viewBox="0 0 100 100">
       <rect x="25" y="20" width="18" height="60"></rect>
       <rect x="57" y="20" width="18" height="60"></rect>
     </svg>
   </div>
 
-  <!-- Poster 2 -->
-  <div id="showModelCTA_p2" class="cta-pill hidden">Show 3D model</div>
+  <!-- Poster 2 (Show 3D model CTA REMOVED; Tell me more kept) -->
   <div id="tellMeMoreBtn_p2" class="cta-pill hidden">Tell me more</div>
 
-  <div id="togglePlayPauseBtn_p2" class="btn hidden">
+  <div id="togglePlayPauseBtn_p2" class="btn hidden" role="button" aria-label="Play/Pause audio">
     <svg id="iconPlay_p2" viewBox="0 0 100 100"><polygon points="30,20 80,50 30,80"></polygon></svg>
     <svg id="iconPause_p2" style="display:none;" viewBox="0 0 100 100">
       <rect x="25" y="20" width="18" height="60"></rect>
@@ -137,190 +182,95 @@
 
   <div id="audioOverlay">Tap to Enable Sound</div>
 
-  <!-- =================== GESTURE COMPONENT (NEW) =================== -->
-  <script>
-    /* Touch gestures: 1‑finger rotate, 2‑finger pinch‑to‑scale */
-    AFRAME.registerComponent('touch-transform', {
-      schema:{ rotateFactor:{default:0.01}, minScale:{default:0.2}, maxScale:{default:3} },
-      init(){
-        this.isDragging=false;
-        this.prevX=0; this.prevY=0;
-        this.pinchStartDist=null;
-        this.startScale=this.el.object3D.scale.x;
-
-        this._boundStart=e=>this._start(e);
-        this._boundMove=e=>this._move(e);
-        this._boundEnd =e=>this._end(e);
-
-        window.addEventListener('touchstart',this._boundStart,{passive:false});
-        window.addEventListener('touchmove', this._boundMove, {passive:false});
-        window.addEventListener('touchend',  this._boundEnd,  {passive:false});
-        window.addEventListener('touchcancel',this._boundEnd,{passive:false});
-      },
-      remove(){
-        window.removeEventListener('touchstart',this._boundStart);
-        window.removeEventListener('touchmove', this._boundMove);
-        window.removeEventListener('touchend',  this._boundEnd);
-        window.removeEventListener('touchcancel',this._boundEnd);
-      },
-      _visible(){ return this.el.object3D.visible; },
-      _isUI(t){ return t && t.closest && t.closest('.btn, .cta-pill, #closeBtn, #audioOverlay, #resetModelBtn_p2, #restartVideoBtn_p1'); },
-      _dist(t0,t1){ const dx=t0.clientX-t1.clientX, dy=t0.clientY-t1.clientY; return Math.hypot(dx,dy); },
-
-      _start(e){
-        if(!this._visible() || this._isUI(e.target)) return;
-
-        if(e.touches.length===1){
-          this.isDragging=true;
-          this.prevX=e.touches[0].clientX;
-          this.prevY=e.touches[0].clientY;
-          e.preventDefault();
-        } else if(e.touches.length===2){
-          this.pinchStartDist=this._dist(e.touches[0],e.touches[1]);
-          this.startScale=this.el.object3D.scale.x;
-          e.preventDefault();
-        }
-      },
-
-      _move(e){
-        if(!this._visible() || this._isUI(e.target)) return;
-
-        // Pinch to scale
-        if(e.touches.length===2 && this.pinchStartDist){
-          const d=this._dist(e.touches[0],e.touches[1]);
-          let s=this.startScale*(d/this.pinchStartDist);
-          s=Math.min(Math.max(s,this.data.minScale),this.data.maxScale);
-          this.el.object3D.scale.set(s,s,s);
-          e.preventDefault();
-          return;
-        }
-
-        // One-finger rotate
-        if(this.isDragging && e.touches.length===1){
-          const x=e.touches[0].clientX, y=e.touches[0].clientY;
-          const dx=x-this.prevX, dy=y-this.prevY;
-          this.prevX=x; this.prevY=y;
-
-          const rot=this.el.object3D.rotation;
-          rot.y += dx*this.data.rotateFactor;  // yaw
-          rot.x += dy*this.data.rotateFactor;  // pitch
-          // Clamp vertical tilt to ±90°
-          const maxX=Math.PI/2, minX=-Math.PI/2;
-          if(rot.x>maxX) rot.x=maxX;
-          if(rot.x<minX) rot.x=minX;
-
-          e.preventDefault();
-        }
-      },
-
-      _end(e){
-        if(!this._visible()) return;
-        if(e.touches.length<2){
-          this.pinchStartDist=null;
-          this.startScale=this.el.object3D.scale.x;
-        }
-        if(e.touches.length===0){
-          this.isDragging=false;
-        }
-      }
-    });
-  </script>
-
-  <!-- =================== MAIN SCRIPT (unchanged except 1 line) =================== -->
+  <!-- =================== SCRIPT =================== -->
   <script>
     window.onload = () => {
 
       /* ELEMENTS */
-      const video=document.querySelector('#videoAsset');
-      const arVideo=document.querySelector('#arVideo');
-      const voice=document.querySelector('#voiceAsset');
+      const video       = document.querySelector('#videoAsset');
+      const arVideo     = document.querySelector('#arVideo');
+      const voice       = document.querySelector('#voiceAsset');
 
-      const modelRig=document.querySelector('#modelRig');
-      const modelEntity=document.querySelector('#modelEntity');
+      const modelRig    = document.querySelector('#modelRig');
+      const modelEntity = document.querySelector('#modelEntity');
 
-      const targetP1=document.querySelector('#targetP1');
-      const targetP2=document.querySelector('#targetP2');
+      const targetP1    = document.querySelector('#targetP1');
+      const targetP2    = document.querySelector('#targetP2');
 
-      const playCTA=document.getElementById('playVideoCTA_p1');
-      const playBtnP1=document.getElementById('togglePlayPauseBtn_p1');
-      const iconPlayP1=document.getElementById('iconPlay_p1');
-      const iconPauseP1=document.getElementById('iconPause_p1');
+      const playCTA     = document.getElementById('playVideoCTA_p1');
+      const playBtnP1   = document.getElementById('togglePlayPauseBtn_p1');
+      const iconPlayP1  = document.getElementById('iconPlay_p1');
+      const iconPauseP1 = document.getElementById('iconPause_p1');
 
-      const restartVideoBtn=document.getElementById('restartVideoBtn_p1');
+      const restartVideoBtn = document.getElementById('restartVideoBtn_p1');
 
-      const showModelCTA=document.getElementById('showModelCTA_p2');
-      const tellCTA=document.getElementById('tellMeMoreBtn_p2');
-      const playBtnP2=document.getElementById('togglePlayPauseBtn_p2');
-      const iconPlayP2=document.getElementById('iconPlay_p2');
-      const iconPauseP2=document.getElementById('iconPause_p2');
+      const tellCTA     = document.getElementById('tellMeMoreBtn_p2');
+      const playBtnP2   = document.getElementById('togglePlayPauseBtn_p2');
+      const iconPlayP2  = document.getElementById('iconPlay_p2');
+      const iconPauseP2 = document.getElementById('iconPause_p2');
 
-      const resetBtnP2=document.getElementById('resetModelBtn_p2');
-      const closeBtn=document.getElementById('closeBtn');
-      const audioOverlay=document.getElementById('audioOverlay');
-
-      /* ADD GESTURE COMPONENT (fixed property name) */
-      modelRig.setAttribute('touch-transform','minScale:0.2; maxScale:3; rotateFactor:0.01');
+      const resetBtnP2  = document.getElementById('resetModelBtn_p2');
+      const closeBtn    = document.getElementById('closeBtn');
+      const audioOverlay= document.getElementById('audioOverlay');
 
       /* MODEL-LOADING STATE */
-      let modelReady=false;
-      let pendingShowModel=false;
+      let modelReady = false;
+      let pendingShowModel = false;
 
-      modelEntity.addEventListener('model-loaded',e=>{
-        const THREE=AFRAME.THREE;
-        const obj=e.detail.model||modelEntity.getObject3D('mesh');
-        if(obj){
-          const box=new THREE.Box3().setFromObject(obj);
-          const center=new THREE.Vector3();
+      /* Recener pivot (so future rotations would be around the center) */
+      modelEntity.addEventListener('model-loaded', e => {
+        const THREE = AFRAME.THREE;
+        const obj = e.detail.model || modelEntity.getObject3D('mesh');
+        if (obj) {
+          const box = new THREE.Box3().setFromObject(obj);
+          const center = new THREE.Vector3();
           box.getCenter(center);
           obj.position.sub(center);
         }
 
-        modelReady=true;
-        if(pendingShowModel){
-          modelRig.setAttribute('visible',true);
-          pendingShowModel=false;
+        modelReady = true;
+        if (pendingShowModel) {
+          modelRig.setAttribute('visible', true);
+          pendingShowModel = false;
         }
       });
 
-      modelEntity.addEventListener('model-error', e=>{
-        console.error('MODEL ERROR',e.detail);
+      modelEntity.addEventListener('model-error', e => {
+        console.error('MODEL ERROR', e.detail);
       });
 
-      let active=null;
+      let active = null;
 
-      /* RESET DEFAULTS */
-      let defaultRigScale=null, defaultRigRot=null;
+      /* Defaults for Reset */
+      let defaultRigScale = null, defaultRigRot = null;
 
-      const show=el=>el.classList.remove('hidden');
-      const hide=el=>el.classList.add('hidden');
+      const show = el => el.classList.remove('hidden');
+      const hide = el => el.classList.add('hidden');
 
       function updateP1(){
-        // NOTE: If you had a helper called icons(), keep it; otherwise you can remove the next line.
-        // icons();
-        const paused=video.paused;
-        iconPlayP1.style.display=paused?'block':'none';
-        iconPauseP1.style.display=paused?'none':'block';
+        const paused = video.paused;
+        iconPlayP1.style.display = paused ? 'block' : 'none';
+        iconPauseP1.style.display = paused ? 'none' : 'block';
       }
       function updateP2(){
-        const paused=voice.paused;
-        iconPlayP2.style.display=paused?'block':'none';
-        iconPauseP2.style.display=paused?'none':'block';
+        const paused = voice.paused;
+        iconPlayP2.style.display = paused ? 'block' : 'none';
+        iconPauseP2.style.display = paused ? 'none' : 'block';
       }
 
       /* AUDIO UNLOCK */
-      audioOverlay.addEventListener('click',()=>{
-        video.muted=false;
-        voice.muted=false;
+      audioOverlay.addEventListener('click', () => {
+        video.muted = false; voice.muted = false;
         video.play().then(()=>video.pause()).catch(()=>{});
         voice.play().then(()=>voice.pause()).catch(()=>{});
-        audioOverlay.style.display='none';
+        audioOverlay.style.display = 'none';
       });
 
-      /* POSTER 1 */
-      targetP1.addEventListener('targetFound',()=>{
-        active='p1';
-        voice.pause(); voice.currentTime=0;
-        arVideo.setAttribute('visible',true);
+      /* ============== Poster 1 ============== */
+      targetP1.addEventListener('targetFound', () => {
+        active = 'p1';
+        voice.pause(); voice.currentTime = 0;
+        arVideo.setAttribute('visible', true);
 
         show(playCTA);
         hide(playBtnP1);
@@ -328,123 +278,120 @@
         show(restartVideoBtn);
         show(closeBtn);
 
-        hide(showModelCTA); hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
+        // Hide P2 UI
+        hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
       });
 
-      targetP1.addEventListener('targetLost',()=>{
+      targetP1.addEventListener('targetLost', () => {
         video.pause();
-        arVideo.setAttribute('visible',false);
+        arVideo.setAttribute('visible', false);
 
         hide(playCTA); hide(playBtnP1);
         hide(restartVideoBtn);
         hide(closeBtn);
 
-        active=null;
+        active = null;
       });
 
-      playCTA.addEventListener('click',()=>{
-        video.play().then(()=>{
+      playCTA.addEventListener('click', () => {
+        video.play().then(() => {
           hide(playCTA);
           show(playBtnP1);
           updateP1();
         }).catch(()=>{});
       });
 
-      playBtnP1.addEventListener('click',()=>{
-        if(video.paused)video.play().catch(()=>{}); else video.pause();
+      playBtnP1.addEventListener('click', () => {
+        if (video.paused) video.play().catch(()=>{}); else video.pause();
         updateP1();
       });
 
-      restartVideoBtn.addEventListener('click',()=>{
+      restartVideoBtn.addEventListener('click', () => {
         video.pause();
-        video.currentTime=0;
+        video.currentTime = 0;
         video.play().catch(()=>{});
         updateP1();
       });
 
-      /* POSTER 2 */
-      targetP2.addEventListener('targetFound',()=>{
-        active='p2';
+      /* ============== Poster 2 (auto-show model) ============== */
+      targetP2.addEventListener('targetFound', () => {
+        active = 'p2';
         video.pause();
 
-        modelRig.setAttribute('visible',false);
+        // Capture defaults for Reset (first scan)
+        defaultRigScale = modelRig.object3D.scale.clone();
+        defaultRigRot   = modelRig.object3D.rotation.clone();
 
-        defaultRigScale=modelRig.object3D.scale.clone();
-        defaultRigRot=modelRig.object3D.rotation.clone();
+        // Auto-show the model: immediately if ready, otherwise when loaded
+        if (modelReady) {
+          modelRig.setAttribute('visible', true);
+        } else {
+          pendingShowModel = true;
+        }
 
-        show(showModelCTA);
-        hide(tellCTA);
+        // Show P2 UI (no Show Model CTA)
+        show(tellCTA);
         hide(playBtnP2);
 
         show(resetBtnP2);
         show(closeBtn);
 
+        // Hide P1 UI
         hide(playCTA); hide(playBtnP1); hide(restartVideoBtn);
       });
 
-      targetP2.addEventListener('targetLost',()=>{
-        voice.pause();
-        voice.currentTime=0;
+      targetP2.addEventListener('targetLost', () => {
+        voice.pause(); voice.currentTime = 0;
 
-        modelRig.setAttribute('visible',false);
-        pendingShowModel=false;
+        modelRig.setAttribute('visible', false);
+        pendingShowModel = false;
 
-        hide(showModelCTA); hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
+        hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
         hide(closeBtn);
 
-        active=null;
-      });
-
-      /* Show 3D model */
-      showModelCTA.addEventListener('click',()=>{
-        hide(showModelCTA);
-
-        if(modelReady){
-          modelRig.setAttribute('visible',true);
-        } else {
-          pendingShowModel=true;
-        }
-
-        show(tellCTA);
+        active = null;
       });
 
       /* Tell me more */
-      tellCTA.addEventListener('click',()=>{
-        voice.play().then(()=>{
+      tellCTA.addEventListener('click', () => {
+        voice.play().then(() => {
           hide(tellCTA);
           show(playBtnP2);
           updateP2();
         }).catch(()=>{});
       });
 
-      playBtnP2.addEventListener('click',()=>{
-        if(voice.paused)voice.play().catch(()=>{}); else voice.pause();
+      /* P2 Audio play/pause */
+      playBtnP2.addEventListener('click', () => {
+        if (voice.paused) voice.play().catch(()=>{}); else voice.pause();
         updateP2();
       });
 
-      resetBtnP2.addEventListener('click',()=>{
+      /* Reset model (to first-scan transform) */
+      resetBtnP2.addEventListener('click', () => {
         modelRig.object3D.scale.copy(defaultRigScale);
-        modelRig.object3D.rotation.set(defaultRigRot.x,defaultRigRot.y,defaultRigRot.z);
+        modelRig.object3D.rotation.set(defaultRigRot.x, defaultRigRot.y, defaultRigRot.z);
       });
 
-      closeBtn.addEventListener('click',()=>{
-        if(active==='p1'){
-          video.pause(); video.currentTime=0;
-          arVideo.setAttribute('visible',false);
+      /* Close */
+      closeBtn.addEventListener('click', () => {
+        if (active === 'p1') {
+          video.pause(); video.currentTime = 0;
+          arVideo.setAttribute('visible', false);
           hide(playCTA); hide(playBtnP1); hide(restartVideoBtn);
         }
-        if(active==='p2'){
-          voice.pause(); voice.currentTime=0;
-          modelRig.setAttribute('visible',false);
-          hide(showModelCTA); hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
+        if (active === 'p2') {
+          voice.pause(); voice.currentTime = 0;
+          modelRig.setAttribute('visible', false);
+          hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
         }
         hide(closeBtn);
-        active=null;
+        active = null;
       });
 
       /* INIT */
       hide(playCTA); hide(playBtnP1); hide(restartVideoBtn);
-      hide(showModelCTA); hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
+      hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
       hide(closeBtn);
     };
   </script>
