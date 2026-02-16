@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
   <!-- A-Frame + MindAR (correct script tags) -->
-  https://aframe.io/releases/1.4.2/aframe.min.js</script>
-  https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js</script>
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
@@ -27,8 +27,8 @@
     .btn:active { transform: scale(0.96); }
 
     .cta-pill {
-      position: fixed; left: 50%; transform: translateX(-50%); bottom: 20px;
-      background: #1e5df8; color: #fff; border-radius: 30px;
+      position: fixed; left: 50%; transform: translateX(-50%);
+      bottom: 20px; background: #1e5df8; color: #fff; border-radius: 30px;
       padding: 14px 22px; font-size: 16px; font-weight: 600;
       box-shadow: 0 8px 24px rgba(30,93,248,0.35);
       z-index: 1000; cursor: pointer; pointer-events: auto; user-select: none;
@@ -69,17 +69,17 @@
 
     <a-assets timeout="45000">
       <!-- Poster 1 video -->
-      ./assets/video.mp4</video>
+      <video id="videoAsset" src="./assets/video.mp4" preload="metadata" playsinline crossorigin="anonymous"></video>
 
       <!-- Poster 2 model -->
-      ./assets/quantum-model-shaded.glb</a-asset-item>
+      <a-asset-item id="modelAsset" src="./assets/quantum-model-shaded.glb" crossorigin="anonymous"></a-asset-item>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <!-- Poster 1 -->
     <a-entity mindar-image-target="targetIndex: 0" id="targetP1">
-      #videoAsset</a-video>
+      <a-video id="arVideo" src="#videoAsset" width="1.6" height="0.9" position="0 0 0" visible="false"></a-video>
     </a-entity>
 
     <!-- Poster 2 (auto show model, no UI, no audio) -->
@@ -135,8 +135,24 @@
       const show = el => el.classList.remove('hidden');
       const hide = el => el.classList.add('hidden');
 
-      /* MODEL LOADED: show immediately when available */
-      modelEntity.addEventListener('model-loaded', () => {
+      /* MODEL LOADED: recenter to the model's true center, then show */
+      modelEntity.addEventListener('model-loaded', (e) => {
+        try {
+          const THREE = AFRAME.THREE;
+          const obj = e.detail.model || modelEntity.getObject3D('mesh');
+          if (obj) {
+            const box = new THREE.Box3().setFromObject(obj);
+            if (!box.isEmpty()) {
+              const center = new THREE.Vector3();
+              box.getCenter(center);
+              obj.position.sub(center);           // pivot to center
+              obj.updateMatrixWorld(true);
+            }
+          }
+        } catch(err) {
+          console.warn('[Model] center recenter skipped:', err);
+        }
+        // Your original behavior: show rig as soon as model is ready
         modelRig.setAttribute('visible', true);
       });
 
@@ -198,7 +214,7 @@
 
       /* ===== Poster 2 (Model auto-show) ===== */
       targetP2.addEventListener('targetFound', () => {
-        // If model already loaded, ensure it's visible when target is found
+        // Ensure it's visible when target is found (if already loaded)
         modelRig.setAttribute('visible', true);
       });
 
