@@ -5,9 +5,9 @@
   <title>DMP3 AR Experience</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
-  <!-- A-Frame + MindAR (correct script tags) -->
-  https://aframe.io/releases/1.4.2/aframe.min.js</script>
-  https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js</script>
+  <!-- A-Frame + MindAR (CORRECT script tags) -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
@@ -41,6 +41,7 @@
       padding: 10px 14px; font-size: 14px; font-weight: 600;
       box-shadow: 0 8px 24px rgba(30,93,248,0.35);
       z-index: 1000; cursor: pointer; pointer-events: auto; user-select: none;
+      white-space: nowrap;
     }
 
     #closeBtn {
@@ -65,27 +66,44 @@
   <a-scene
     mindar-image="imageTargetSrc: ./assets/targets.mind; filterMinCF: 0.0001; filterBeta: 0.001;"
     vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: true">
+    device-orientation-permission-ui="enabled: true"
+    loading-screen="enabled: false">
 
+    <!-- Preload assets with proper IDs -->
     <a-assets timeout="45000">
-      <!-- Poster 1 video -->
-      ./assets/video.mp4</video>
+      <!-- Poster 1 video asset -->
+      <video id="videoAsset"
+             src="./assets/video.mp4"
+             preload="metadata"
+             playsinline
+             crossorigin="anonymous"></video>
 
-      <!-- Poster 2 model -->
-      ./assets/quantum-model-shaded.glb</a-asset-item>
+      <!-- Poster 2 model asset -->
+      <a-asset-item id="modelAsset"
+                    src="./assets/quantum-model-shaded.glb"
+                    crossorigin="anonymous"></a-asset-item>
     </a-assets>
+
+    <!-- (Optional) Simple lighting helps visibility on mobile -->
+    <a-entity light="type: ambient; intensity: 1.05"></a-entity>
+    <a-entity light="type: directional; intensity: 1.1; position: 0 1 1"></a-entity>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Poster 1 -->
+    <!-- Poster 1 (video) -->
     <a-entity mindar-image-target="targetIndex: 0" id="targetP1">
-      #videoAsset</a-video>
+      <a-video id="arVideo"
+               src="#videoAsset"
+               width="1.6"
+               height="0.9"
+               position="0 0 0"
+               visible="false"></a-video>
     </a-entity>
 
-    <!-- Poster 2 (auto show model, no UI, no audio) -->
+    <!-- Poster 2 (auto-show model; no gestures) -->
     <a-entity mindar-image-target="targetIndex: 1" id="targetP2">
       <a-entity id="modelRig"
-                position="0 -0.05 0.06"
+                position="0 0 0"
                 rotation="0 0 0"
                 scale="0.7 0.7 0.7"
                 visible="false">
@@ -114,37 +132,60 @@
   <script>
     window.onload = () => {
       /* ELEMENTS */
-      const video = document.querySelector('#videoAsset');
+      const video   = document.querySelector('#videoAsset');
       const arVideo = document.querySelector('#arVideo');
 
-      const modelRig = document.querySelector('#modelRig');
+      const modelRig    = document.querySelector('#modelRig');
       const modelEntity = document.querySelector('#modelEntity');
 
       const targetP1 = document.querySelector('#targetP1');
       const targetP2 = document.querySelector('#targetP2');
 
-      const playCTA = document.getElementById('playVideoCTA_p1');
-      const playBtnP1 = document.getElementById('togglePlayPauseBtn_p1');
-      const iconPlayP1 = document.getElementById('iconPlay_p1');
+      const playCTA     = document.getElementById('playVideoCTA_p1');
+      const playBtnP1   = document.getElementById('togglePlayPauseBtn_p1');
+      const iconPlayP1  = document.getElementById('iconPlay_p1');
       const iconPauseP1 = document.getElementById('iconPause_p1');
 
       const restartVideoBtn = document.getElementById('restartVideoBtn_p1');
-      const closeBtn = document.getElementById('closeBtn');
+      const closeBtn   = document.getElementById('closeBtn');
       const audioOverlay = document.getElementById('audioOverlay');
 
       const show = el => el.classList.remove('hidden');
       const hide = el => el.classList.add('hidden');
 
-      /* MODEL LOADED: show immediately when available */
-      modelEntity.addEventListener('model-loaded', () => {
-        modelRig.setAttribute('visible', true);
+      /* === Poster 2: recenter pivot on model load (centre-based placement) === */
+      modelEntity.addEventListener('model-loaded', (e) => {
+        try {
+          const THREE = AFRAME.THREE;
+          const obj = e.detail.model || modelEntity.getObject3D('mesh');
+          if (obj) {
+            const box = new THREE.Box3().setFromObject(obj);
+            if (!box.isEmpty()) {
+              const center = new THREE.Vector3();
+              box.getCenter(center);
+              obj.position.sub(center); // centre pivot
+            }
+            // Robust visibility on mobile
+            obj.traverse(n => {
+              if (n.isMesh) {
+                n.frustumCulled = false;
+                if (n.material) {
+                  const mats = Array.isArray(n.material) ? n.material : [n.material];
+                  mats.forEach(m => { m.transparent = false; m.opacity = 1; });
+                }
+              }
+            });
+          }
+        } catch (err) {
+          console.warn('[Model] recenter skipped:', err);
+        }
       });
 
       modelEntity.addEventListener('model-error', (e) => {
         console.error('[MODEL ERROR]', e.detail);
       });
 
-      /* AUDIO UNLOCK */
+      /* === Audio unlock for Poster 1 video === */
       audioOverlay.addEventListener('click', () => {
         video.muted = false;
         video.play().then(() => video.pause()).catch(()=>{});
@@ -198,12 +239,25 @@
 
       /* ===== Poster 2 (Model auto-show) ===== */
       targetP2.addEventListener('targetFound', () => {
-        // If model already loaded, ensure it's visible when target is found
         modelRig.setAttribute('visible', true);
+        show(closeBtn);
       });
 
       targetP2.addEventListener('targetLost', () => {
         modelRig.setAttribute('visible', false);
+        hide(closeBtn);
+      });
+
+      /* Close button hides whichever is active */
+      closeBtn.addEventListener('click', () => {
+        // Hide Poster 1 video + UI
+        video.pause(); video.currentTime = 0;
+        arVideo.setAttribute('visible', false);
+        hide(playCTA); hide(playBtnP1); hide(restartVideoBtn);
+
+        // Hide Poster 2 model
+        modelRig.setAttribute('visible', false);
+        hide(closeBtn);
       });
 
       /* INIT UI */
