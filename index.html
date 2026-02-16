@@ -5,7 +5,7 @@
   <title>DMP3 AR Experience</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
-  <!-- A-Frame + MindAR -->
+  <!-- A-Frame + MindAR (correct script tags) -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
@@ -80,6 +80,10 @@
                     src="./assets/quantum-model-shaded.glb"
                     crossorigin="anonymous"></a-asset-item>
     </a-assets>
+
+    <!-- Simple lights (helps PBR on mobile) -->
+    <a-entity light="type: ambient; intensity: 1.1"></a-entity>
+    <a-entity light="type: directional; intensity: 1.1; position: 0 1 1"></a-entity>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
@@ -238,27 +242,24 @@
       const show = el => el.classList.remove('hidden');
       const hide = el => el.classList.add('hidden');
 
-      /* MODEL LOADED: recenter to pivot center and show */
+      /* MODEL LOADED: recenter to pivot center */
       modelEntity.addEventListener('model-loaded', e => {
         const THREE = AFRAME.THREE;
         const obj = e.detail.model || modelEntity.getObject3D('mesh');
 
         if (obj) {
-          // Recenter pivot to model's bounding-box center (rotate around center)
           try {
             const box = new THREE.Box3().setFromObject(obj);
             if (!box.isEmpty()){
               const center = new THREE.Vector3();
               box.getCenter(center);
-              obj.position.sub(center);
+              obj.position.sub(center);  // rotate around model center
             }
           } catch (err) {
             console.warn('[Model] recenter skipped:', err);
           }
         }
-
-        // Ensure visible once ready (Poster 2 auto-show)
-        modelRig.setAttribute('visible', true);
+        // Note: visibility is handled by targetFound/targetLost
       });
 
       modelEntity.addEventListener('model-error', (e) => {
