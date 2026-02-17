@@ -14,7 +14,7 @@
     .hidden { display: none !important; }
     canvas.a-canvas, .a-canvas { touch-action: none !important; }
 
-    /* Buttons / CTAs */
+    /* Circle buttons */
     .btn {
       position: fixed; bottom: 20px; left: 20px;
       width: 70px; height: 70px; border-radius: 50%;
@@ -26,6 +26,7 @@
     .btn svg { width: 34px; height: 34px; fill: #fff; }
     .btn:active { transform: scale(0.96); }
 
+    /* CTA pill */
     .cta-pill {
       position: fixed; left: 50%; transform: translateX(-50%); bottom: 20px;
       background: #1e5df8; color: #fff; border-radius: 30px;
@@ -93,13 +94,14 @@
       <a-video id="arVideo" src="#videoAsset" width="1.6" height="0.9" position="0 0 0" visible="false"></a-video>
     </a-entity>
 
-    <!-- Poster 2 (model in default state; slight Y/Z offset to “look” more centered) -->
+    <!-- Poster 2 (model in your default state + gestures) -->
     <a-entity mindar-image-target="targetIndex: 1" id="targetP2">
       <a-entity id="modelRig"
                 position="0 -0.85 0.05"
                 rotation="0 0 0"
                 scale="1 1 1"
-                visible="false">
+                visible="false"
+                touch-transform="minScale:0.2; maxScale:3; rotateFactor:0.01">
         <a-entity id="modelEntity" gltf-model="#modelAsset"></a-entity>
       </a-entity>
     </a-entity>
@@ -107,7 +109,7 @@
   </a-scene>
 
   <!-- =================== UI =================== -->
-  <!-- Poster 1 -->
+  <!-- Poster 1 video controls -->
   <div id="playVideoCTA_p1" class="cta-pill hidden">Play video</div>
   <div id="restartVideoBtn_p1" class="hidden">Restart video</div>
   <div id="togglePlayPauseBtn_p1" class="btn hidden" role="button" aria-label="Play/Pause video">
@@ -133,7 +135,96 @@
   <div id="closeBtn" class="hidden">✕</div>
   <div id="audioOverlay">Tap to Enable Sound</div>
 
-  <!-- =================== SCRIPT =================== -->
+  <!-- =================== GESTURE COMPONENT (rotate + pinch) =================== -->
+  <script>
+    /* Touch gestures: 1‑finger rotate, 2‑finger pinch‑to‑scale (on #modelRig) */
+    AFRAME.registerComponent('touch-transform', {
+      schema:{ rotateFactor:{default:0.01}, minScale:{default:0.2}, maxScale:{default:3} },
+      init(){
+        this.isDragging=false;
+        this.prevX=0; this.prevY=0;
+        this.pinchStartDist=null;
+        this.startScale=this.el.object3D.scale.x;
+
+        this._boundStart=e=>this._start(e);
+        this._boundMove =e=>this._move(e);
+        this._boundEnd  =e=>this._end(e);
+
+        window.addEventListener('touchstart',this._boundStart,{passive:false});
+        window.addEventListener('touchmove', this._boundMove, {passive:false});
+        window.addEventListener('touchend',  this._boundEnd,  {passive:false});
+        window.addEventListener('touchcancel',this._boundEnd,{passive:false});
+      },
+      remove(){
+        window.removeEventListener('touchstart',this._boundStart);
+        window.removeEventListener('touchmove', this._boundMove);
+        window.removeEventListener('touchend',  this._boundEnd);
+        window.removeEventListener('touchcancel',this._boundEnd);
+      },
+      _visible(){ return this.el.object3D.visible; },
+      _isUI(t){
+        return t && t.closest && t.closest(
+          '.btn, .cta-pill, #closeBtn, #audioOverlay, #restartVideoBtn_p1, #restartVoiceBtn_p2'
+        );
+      },
+      _dist(t0,t1){ const dx=t0.clientX-t1.clientX, dy=t0.clientY-t1.clientY; return Math.hypot(dx,dy); },
+
+      _start(e){
+        if(!this._visible() || this._isUI(e.target)) return;
+        if(e.touches.length===1){
+          this.isDragging=true;
+          this.prevX=e.touches[0].clientX;
+          this.prevY=e.touches[0].clientY;
+          e.preventDefault();
+        } else if(e.touches.length===2){
+          this.pinchStartDist=this._dist(e.touches[0],e.touches[1]);
+          this.startScale=this.el.object3D.scale.x;
+          e.preventDefault();
+        }
+      },
+      _move(e){
+        if(!this._visible() || this._isUI(e.target)) return;
+
+        // Pinch to scale
+        if(e.touches.length===2 && this.pinchStartDist){
+          const d=this._dist(e.touches[0],e.touches[1]);
+          let s=this.startScale*(d/this.pinchStartDist);
+          s=Math.min(Math.max(s,this.data.minScale),this.data.maxScale);
+          this.el.object3D.scale.set(s,s,s);
+          e.preventDefault();
+          return;
+        }
+
+        // 1‑finger rotate (yaw + limited pitch)
+        if(this.isDragging && e.touches.length===1){
+          const x=e.touches[0].clientX, y=e.touches[0].clientY;
+          const dx=x-this.prevX, dy=y-this.prevY;
+          this.prevX=x; this.prevY=y;
+
+          const rot=this.el.object3D.rotation;
+          rot.y += dx * this.data.rotateFactor;  // yaw
+          rot.x += dy * this.data.rotateFactor;  // pitch
+          const maxX=Math.PI/2, minX=-Math.PI/2; // clamp ±90°
+          if(rot.x>maxX) rot.x=maxX;
+          if(rot.x<minX) rot.x=minX;
+
+          e.preventDefault();
+        }
+      },
+      _end(e){
+        if(!this._visible()) return;
+        if(e.touches.length<2){
+          this.pinchStartDist=null;
+          this.startScale=this.el.object3D.scale.x;
+        }
+        if(e.touches.length===0){
+          this.isDragging=false;
+        }
+      }
+    });
+  </script>
+
+  <!-- =================== MAIN SCRIPT =================== -->
   <script>
     window.onload = () => {
       /* ELEMENTS */
@@ -231,14 +322,14 @@
         updateP1();
       });
 
-      /* ===== Poster 2 (Model default + voiceover UI) ===== */
+      /* ===== Poster 2 (Model default + voiceover UI + gestures) ===== */
       targetP2.addEventListener('targetFound', () => {
-        // Model shows automatically in default (with small Y/Z offset to “look” centered)
+        // Model shows automatically at your chosen position (0 -0.85 0.05)
         modelRig.setAttribute('visible', true);
 
         // Show P2 voiceover controls
         show(tellCTA);
-        hide(playBtnP2);      // Play/Pause appears after Tell me more
+        hide(playBtnP2);       // Play/Pause appears after Tell me more
         hide(restartVoiceBtn); // appears only after voice started
         show(closeBtn);
 
