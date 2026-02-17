@@ -5,7 +5,7 @@
   <title>DMP3 AR Experience</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
-  <!-- A-Frame + MindAR -->
+  <!-- A-Frame + MindAR (CORRECT script tags) -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
@@ -46,7 +46,7 @@
       white-space: nowrap;
     }
 
-    /* NEW: Reset model (bottom-right) */
+    /* Reset model (bottom-right) */
     #resetModelBtn_p2 {
       position: fixed; bottom: 20px; right: 20px;
       background: #1e5df8; color: #fff; border-radius: 30px;
@@ -80,12 +80,13 @@
     mindar-image="imageTargetSrc: ./assets/targets.mind; filterMinCF: 0.0001; filterBeta: 0.001;"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: true"
-    loading-screen="enabled: false">
+    loading-screen="enabled: false"
+    renderer="colorManagement: true; physicallyCorrectLights: true; exposure: 1.15">
 
     <!-- Preload assets -->
     <a-assets timeout="45000">
       <!-- Poster 1 video -->
-      <video id="videoAsset" src="./assets/video.mp4" preload="metadata" playsinline crossorigin="anonymous"></video>
+      <video id="videoAsset" src="./assets/video.mp4" preload="auto" playsinline crossorigin="anonymous"></video>
 
       <!-- Poster 2 model -->
       <a-asset-item id="modelAsset" src="./assets/quantum-model-shaded.glb" crossorigin="anonymous"></a-asset-item>
@@ -94,9 +95,10 @@
       <audio id="voiceAsset" src="./assets/quantum-voiceover.mp3" preload="auto" crossorigin="anonymous"></audio>
     </a-assets>
 
-    <!-- Simple lighting -->
-    <a-entity light="type: ambient; intensity: 1.05"></a-entity>
-    <a-entity light="type: directional; intensity: 1.1; position: 0 1 1"></a-entity>
+    <!-- ✨ Lighting: Hemi + Key + Rim (balanced, bright, natural) -->
+    <a-entity light="type: hemisphere; intensity: 0.9; color: #ffffff; groundColor: #666666"></a-entity>
+    <a-entity light="type: directional; intensity: 1.2; castShadow: false" position="0.5 1 0.8"></a-entity>
+    <a-entity light="type: directional; intensity: 0.6; castShadow: false" position="-0.8 0.8 -0.6"></a-entity>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
@@ -142,7 +144,7 @@
   </div>
   <div id="restartVoiceBtn_p2" class="hidden">Restart audio</div>
 
-  <!-- NEW: Poster 2 Reset model (bottom-right) -->
+  <!-- Reset model (bottom-right) -->
   <div id="resetModelBtn_p2" class="hidden">Reset model</div>
 
   <!-- Shared -->
@@ -405,8 +407,8 @@
         updateP2();
       });
 
-      // NEW: Reset model (restores captured scale & rotation)
-      resetModelBtn.addEventListener('click', () => {
+      // Reset model (restores captured scale & rotation)
+      document.getElementById('resetModelBtn_p2').addEventListener('click', () => {
         if (defaultRigScale && defaultRigRot) {
           modelRig.object3D.scale.copy(defaultRigScale);
           modelRig.object3D.rotation.set(defaultRigRot.x, defaultRigRot.y, defaultRigRot.z);
