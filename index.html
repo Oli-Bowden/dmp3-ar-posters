@@ -5,7 +5,7 @@
   <title>DMP3 AR Experience</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
-  <!-- A-Frame + MindAR (CORRECT script tags) -->
+  <!-- A-Frame + MindAR -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
@@ -14,7 +14,7 @@
     .hidden { display: none !important; }
     canvas.a-canvas, .a-canvas { touch-action: none !important; }
 
-    /* Circle buttons */
+    /* Round action button */
     .btn {
       position: fixed; bottom: 20px; left: 20px;
       width: 70px; height: 70px; border-radius: 50%;
@@ -26,7 +26,7 @@
     .btn svg { width: 34px; height: 34px; fill: #fff; }
     .btn:active { transform: scale(0.96); }
 
-    /* CTA pill */
+    /* CTA pill (bottom center) */
     .cta-pill {
       position: fixed; left: 50%; transform: translateX(-50%); bottom: 20px;
       background: #1e5df8; color: #fff; border-radius: 30px;
@@ -46,6 +46,17 @@
       white-space: nowrap;
     }
 
+    /* NEW: Reset model (bottom-right) */
+    #resetModelBtn_p2 {
+      position: fixed; bottom: 20px; right: 20px;
+      background: #1e5df8; color: #fff; border-radius: 30px;
+      padding: 10px 14px; font-size: 14px; font-weight: 600;
+      box-shadow: 0 8px 24px rgba(30,93,248,0.35);
+      z-index: 1000; cursor: pointer; pointer-events: auto; user-select: none;
+      white-space: nowrap;
+    }
+
+    /* Close (top-right) */
     #closeBtn {
       position: fixed; top: 20px; right: 20px;
       width: 55px; height: 55px; line-height: 55px; text-align: center;
@@ -56,8 +67,8 @@
     #audioOverlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.85);
       color: #fff; display: flex; align-items: center; justify-content: center;
-      font-size: 22px; z-index: 2000; cursor: pointer; user-select: none; text-align: center;
-      padding: 24px;
+      font-size: 22px; z-index: 2000; cursor: pointer; pointer-events: auto; user-select: none;
+      padding: 24px; text-align: center;
     }
   </style>
 </head>
@@ -71,10 +82,10 @@
     device-orientation-permission-ui="enabled: true"
     loading-screen="enabled: false">
 
-    <!-- Preload assets with proper IDs -->
+    <!-- Preload assets -->
     <a-assets timeout="45000">
       <!-- Poster 1 video -->
-      <video id="videoAsset" src="./assets/video.mp4" preload="auto" playsinline crossorigin="anonymous"></video>
+      <video id="videoAsset" src="./assets/video.mp4" preload="metadata" playsinline crossorigin="anonymous"></video>
 
       <!-- Poster 2 model -->
       <a-asset-item id="modelAsset" src="./assets/quantum-model-shaded.glb" crossorigin="anonymous"></a-asset-item>
@@ -83,7 +94,7 @@
       <audio id="voiceAsset" src="./assets/quantum-voiceover.mp3" preload="auto" crossorigin="anonymous"></audio>
     </a-assets>
 
-    <!-- Lighting helps visibility on mobile -->
+    <!-- Simple lighting -->
     <a-entity light="type: ambient; intensity: 1.05"></a-entity>
     <a-entity light="type: directional; intensity: 1.1; position: 0 1 1"></a-entity>
 
@@ -94,7 +105,7 @@
       <a-video id="arVideo" src="#videoAsset" width="1.6" height="0.9" position="0 0 0" visible="false"></a-video>
     </a-entity>
 
-    <!-- Poster 2 (model in your default state + gestures) -->
+    <!-- Poster 2 (your model position + gestures) -->
     <a-entity mindar-image-target="targetIndex: 1" id="targetP2">
       <a-entity id="modelRig"
                 position="0 -0.85 0.05"
@@ -109,7 +120,7 @@
   </a-scene>
 
   <!-- =================== UI =================== -->
-  <!-- Poster 1 video controls -->
+  <!-- Poster 1 -->
   <div id="playVideoCTA_p1" class="cta-pill hidden">Play video</div>
   <div id="restartVideoBtn_p1" class="hidden">Restart video</div>
   <div id="togglePlayPauseBtn_p1" class="btn hidden" role="button" aria-label="Play/Pause video">
@@ -120,7 +131,7 @@
     </svg>
   </div>
 
-  <!-- Poster 2 voiceover controls -->
+  <!-- Poster 2 voiceover -->
   <div id="tellMeMoreBtn_p2" class="cta-pill hidden">Tell me more</div>
   <div id="togglePlayPauseBtn_p2" class="btn hidden" role="button" aria-label="Play/Pause audio">
     <svg id="iconPlay_p2" viewBox="0 0 100 100"><polygon points="30,20 80,50 30,80"></polygon></svg>
@@ -131,13 +142,16 @@
   </div>
   <div id="restartVoiceBtn_p2" class="hidden">Restart audio</div>
 
+  <!-- NEW: Poster 2 Reset model (bottom-right) -->
+  <div id="resetModelBtn_p2" class="hidden">Reset model</div>
+
   <!-- Shared -->
   <div id="closeBtn" class="hidden">✕</div>
   <div id="audioOverlay">Tap to Enable Sound</div>
 
   <!-- =================== GESTURE COMPONENT (rotate + pinch) =================== -->
   <script>
-    /* Touch gestures: 1‑finger rotate, 2‑finger pinch‑to‑scale (on #modelRig) */
+    /* Touch gestures: 1‑finger rotate, 2‑finger pinch‑to‑scale */
     AFRAME.registerComponent('touch-transform', {
       schema:{ rotateFactor:{default:0.01}, minScale:{default:0.2}, maxScale:{default:3} },
       init(){
@@ -164,7 +178,7 @@
       _visible(){ return this.el.object3D.visible; },
       _isUI(t){
         return t && t.closest && t.closest(
-          '.btn, .cta-pill, #closeBtn, #audioOverlay, #restartVideoBtn_p1, #restartVoiceBtn_p2'
+          '.btn, .cta-pill, #closeBtn, #audioOverlay, #restartVideoBtn_p1, #restartVoiceBtn_p2, #resetModelBtn_p2'
         );
       },
       _dist(t0,t1){ const dx=t0.clientX-t1.clientX, dy=t0.clientY-t1.clientY; return Math.hypot(dx,dy); },
@@ -250,12 +264,17 @@
       const iconPauseP2 = document.getElementById('iconPause_p2');
 
       const restartVoiceBtn = document.getElementById('restartVoiceBtn_p2');
+      const resetModelBtn   = document.getElementById('resetModelBtn_p2');
 
       const closeBtn   = document.getElementById('closeBtn');
       const audioOverlay = document.getElementById('audioOverlay');
 
       const show = el => el && el.classList.remove('hidden');
       const hide = el => el && el.classList.add('hidden');
+
+      /* Capture defaults for Reset (Poster 2) */
+      let defaultRigScale = null;
+      let defaultRigRot   = null;
 
       /* === Audio unlock for both video & voiceover === */
       audioOverlay.addEventListener('click', () => {
@@ -282,7 +301,7 @@
         show(closeBtn);
 
         // Hide P2 UI
-        hide(tellCTA); hide(playBtnP2); hide(restartVoiceBtn);
+        hide(tellCTA); hide(playBtnP2); hide(restartVoiceBtn); hide(resetModelBtn);
       });
 
       targetP1.addEventListener('targetLost', () => {
@@ -322,15 +341,20 @@
         updateP1();
       });
 
-      /* ===== Poster 2 (Model default + voiceover UI + gestures) ===== */
+      /* ===== Poster 2 (Model + voiceover + gestures + Reset) ===== */
       targetP2.addEventListener('targetFound', () => {
         // Model shows automatically at your chosen position (0 -0.85 0.05)
         modelRig.setAttribute('visible', true);
 
-        // Show P2 voiceover controls
+        // Capture defaults on first detection (so Reset returns to these)
+        if (!defaultRigScale) defaultRigScale = modelRig.object3D.scale.clone();
+        if (!defaultRigRot)   defaultRigRot   = modelRig.object3D.rotation.clone();
+
+        // Show P2 voiceover controls and Reset pill
         show(tellCTA);
         hide(playBtnP2);       // Play/Pause appears after Tell me more
         hide(restartVoiceBtn); // appears only after voice started
+        show(resetModelBtn);
         show(closeBtn);
 
         // Hide Poster 1 UI
@@ -343,7 +367,7 @@
         voice.currentTime = 0;
 
         modelRig.setAttribute('visible', false);
-        hide(tellCTA); hide(playBtnP2); hide(restartVoiceBtn);
+        hide(tellCTA); hide(playBtnP2); hide(restartVoiceBtn); hide(resetModelBtn);
         hide(closeBtn);
       });
 
@@ -381,6 +405,14 @@
         updateP2();
       });
 
+      // NEW: Reset model (restores captured scale & rotation)
+      resetModelBtn.addEventListener('click', () => {
+        if (defaultRigScale && defaultRigRot) {
+          modelRig.object3D.scale.copy(defaultRigScale);
+          modelRig.object3D.rotation.set(defaultRigRot.x, defaultRigRot.y, defaultRigRot.z);
+        }
+      });
+
       /* Close: hides whichever is active */
       closeBtn.addEventListener('click', () => {
         // Poster 1
@@ -391,14 +423,14 @@
         // Poster 2
         voice.pause(); voice.currentTime = 0;
         modelRig.setAttribute('visible', false);
-        hide(tellCTA); hide(playBtnP2); hide(restartVoiceBtn);
+        hide(tellCTA); hide(playBtnP2); hide(restartVoiceBtn); hide(resetModelBtn);
 
         hide(closeBtn);
       });
 
       /* INIT UI */
       hide(playCTA); hide(playBtnP1); hide(restartVideoBtn);
-      hide(tellCTA); hide(playBtnP2); hide(restartVoiceBtn);
+      hide(tellCTA); hide(playBtnP2); hide(restartVoiceBtn); hide(resetModelBtn);
       hide(closeBtn);
     };
   </script>
