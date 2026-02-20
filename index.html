@@ -95,7 +95,7 @@
       <audio id="voiceAsset" src="./assets/quantum-voiceover.mp3" preload="auto" crossorigin="anonymous"></audio>
     </a-assets>
 
-    <!-- ✨ Lighting: Hemi + Key + Rim (balanced, bright, natural) -->
+    <!-- Lighting: Hemi + Key + Rim (balanced, bright, natural) -->
     <a-entity light="type: hemisphere; intensity: 0.9; color: #ffffff; groundColor: #666666"></a-entity>
     <a-entity light="type: directional; intensity: 1.2; castShadow: false" position="0.5 1 0.8"></a-entity>
     <a-entity light="type: directional; intensity: 0.6; castShadow: false" position="-0.8 0.8 -0.6"></a-entity>
@@ -157,7 +157,7 @@
             background:#000; color:#fff;
             font-size:20px; z-index:1500;
             align-items:center; justify-content:center;">
-  Loading AR…
+  Loading AR Experience…
 </div>
   
   <!-- =================== GESTURE COMPONENT (rotate + pinch) =================== -->
@@ -287,71 +287,66 @@
       let defaultRigScale = null;
       let defaultRigRot   = null;
 
-/* === Audio unlock (SAFE + GOOD UX) === */
+/* === Audio unlock (SAFE + GOOD UX + SPINNER) === */
 audioOverlay.addEventListener('click', async () => {
-  // Immediately hide overlay (UX feedback) and show loader
-  audioOverlay.style.display = 'none';
-  const loadingEl = document.getElementById('loadingIndicator');
-  if (loadingEl) loadingEl.style.display = 'flex';
 
-  // 1) Unmute your media (no playback here)
+  // Immediately hide overlay (visual feedback)
+  audioOverlay.style.display = 'none';
+
+  // Show loading animation screen
+  const arLoading = document.getElementById('arLoadingScreen');
+  arLoading.style.display = 'flex';
+  arLoading.style.opacity = '1';
+
+  // 1) Unmute media
   if (video) video.muted = false;
   if (voice) voice.muted = false;
 
-  // 2) Create/resume AudioContext (iOS requirement)
+  // 2) Create/resume AudioContext
   try {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (AC) {
       if (!window._audioCtx) window._audioCtx = new AC();
-      if (window._audioCtx.state === 'suspended') {
+      if (window._audioCtx.state === "suspended") {
         await window._audioCtx.resume();
       }
     }
-  } catch (e) {
-    // non-fatal
-  }
+  } catch(e){}
 
-  // 3) Play 1-sample silent buffer to satisfy autoplay policies without using your media
+  // 3) Play a silent 1‑sample audio buffer to satisfy iOS autoplay policy
   try {
     const ctx = window._audioCtx;
-    if (ctx) {
-      const silentBuffer = ctx.createBuffer(1, 1, 22050); // 1 sample of silence
-      const source = ctx.createBufferSource();
-      source.buffer = silentBuffer;
-      source.connect(ctx.destination);
-      source.start(0);
-    }
-  } catch (e) {
-    console.warn('Silent buffer unlock failed (non-fatal):', e);
-  }
+    const silent = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = silent;
+    src.connect(ctx.destination);
+    src.start(0);
+  } catch(e){}
 
-  // 4) Defensive: ensure real media are paused & reset to 0 (if safe)
+  // 4) Ensure media is paused/reset
   try {
-    if (video) {
-      video.pause();
-      if (!isNaN(video.duration)) video.currentTime = 0;
-    }
-    if (voice) {
-      voice.pause();
-      if (!isNaN(voice.duration)) voice.currentTime = 0;
-    }
-  } catch (e) {
-    // non-fatal
-  }
+    video.pause();
+    if (!isNaN(video.duration)) video.currentTime = 0;
+    voice.pause();
+    if (!isNaN(voice.duration)) voice.currentTime = 0;
+  } catch(e){}
 
-  // 5) Hide loader when AR is ready (first AR-ready event)
+  // 5) Hide loading screen once AR is ready
   const scene = document.querySelector('a-scene');
-  const hideLoader = () => { if (loadingEl) loadingEl.style.display = 'none'; };
-  if (scene && scene.hasLoaded) {
-    // MindAR may fire arReady after scene loaded; listen for it
+  const hideLoader = () => {
+    arLoading.style.transition = "opacity 0.4s ease";
+    arLoading.style.opacity = "0";
+    setTimeout(() => {
+      arLoading.style.display = "none";
+    }, 400);
+  };
+
+  if (scene.hasLoaded) {
     scene.addEventListener('arReady', hideLoader, { once: true });
-  } else if (scene) {
+  } else {
     scene.addEventListener('loaded', () => {
       scene.addEventListener('arReady', hideLoader, { once: true });
-    }, { once: true });
-  } else {
-    // Fallback: remove after 3.5s if scene isn’t found (shouldn’t happen)
-    setTimeout(hideLoader, 3500);
+    });
   }
 });
       
