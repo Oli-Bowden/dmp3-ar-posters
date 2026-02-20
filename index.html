@@ -151,6 +151,15 @@
   <div id="closeBtn" class="hidden">✕</div>
   <div id="audioOverlay">Tap to Enable Sound</div>
 
+  <!-- Lightweight loading indicator shown after overlay tap until AR is ready -->
+<div id="loadingIndicator"
+     style="position:fixed; inset:0; display:none;
+            background:#000; color:#fff;
+            font-size:20px; z-index:1500;
+            align-items:center; justify-content:center;">
+  Loading AR…
+</div>
+  
   <!-- =================== GESTURE COMPONENT (rotate + pinch) =================== -->
   <script>
     /* Touch gestures: 1‑finger rotate, 2‑finger pinch‑to‑scale */
@@ -278,23 +287,45 @@
       let defaultRigScale = null;
       let defaultRigRot   = null;
 
-/* === Audio unlock for both video & voiceover (SAFE, NO AUTOPLAY) === */
-audioOverlay.addEventListener('click', () => {
+/* === Audio unlock (SAFE + GOOD UX) === */
+audioOverlay.addEventListener('click', async () => {
+  // Immediately hide overlay (UX feedback) and show loader
+  audioOverlay.style.display = 'none';
+  const loadingEl = document.getElementById('loadingIndicator');
+  if (loadingEl) loadingEl.style.display = 'flex';
 
-  // 1) Unmute — do NOT play anything
+  // 1) Unmute your media (no playback here)
   if (video) video.muted = false;
   if (voice) voice.muted = false;
 
-  // 2) Unlock audio context (iOS requirement)
+  // 2) Create/resume AudioContext (iOS requirement)
   try {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (AC) {
       if (!window._audioCtx) window._audioCtx = new AC();
-      if (window._audioCtx.state === "suspended") window._audioCtx.resume();
+      if (window._audioCtx.state === 'suspended') {
+        await window._audioCtx.resume();
+      }
     }
-  } catch(e){}
+  } catch (e) {
+    // non-fatal
+  }
 
-  // 3) Safety pause & reset — ensures nothing plays accidentally
+  // 3) Play 1-sample silent buffer to satisfy autoplay policies without using your media
+  try {
+    const ctx = window._audioCtx;
+    if (ctx) {
+      const silentBuffer = ctx.createBuffer(1, 1, 22050); // 1 sample of silence
+      const source = ctx.createBufferSource();
+      source.buffer = silentBuffer;
+      source.connect(ctx.destination);
+      source.start(0);
+    }
+  } catch (e) {
+    console.warn('Silent buffer unlock failed (non-fatal):', e);
+  }
+
+  // 4) Defensive: ensure real media are paused & reset to 0 (if safe)
   try {
     if (video) {
       video.pause();
@@ -304,11 +335,26 @@ audioOverlay.addEventListener('click', () => {
       voice.pause();
       if (!isNaN(voice.duration)) voice.currentTime = 0;
     }
-  } catch(e){}
+  } catch (e) {
+    // non-fatal
+  }
 
-  // 4) Remove overlay
-  audioOverlay.style.display = 'none';
+  // 5) Hide loader when AR is ready (first AR-ready event)
+  const scene = document.querySelector('a-scene');
+  const hideLoader = () => { if (loadingEl) loadingEl.style.display = 'none'; };
+  if (scene && scene.hasLoaded) {
+    // MindAR may fire arReady after scene loaded; listen for it
+    scene.addEventListener('arReady', hideLoader, { once: true });
+  } else if (scene) {
+    scene.addEventListener('loaded', () => {
+      scene.addEventListener('arReady', hideLoader, { once: true });
+    }, { once: true });
+  } else {
+    // Fallback: remove after 3.5s if scene isn’t found (shouldn’t happen)
+    setTimeout(hideLoader, 3500);
+  }
 });
+      
       /* ===== Poster 1 (Video) ===== */
       const updateP1 = () => {
         const paused = video.paused;
