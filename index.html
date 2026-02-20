@@ -278,13 +278,37 @@
       let defaultRigScale = null;
       let defaultRigRot   = null;
 
-      /* === Audio unlock for both video & voiceover === */
-      audioOverlay.addEventListener('click', () => {
-        if (video) { video.muted = false; video.play().then(()=>video.pause()).catch(()=>{}); }
-        if (voice) { voice.muted = false; voice.play().then(()=>voice.pause()).catch(()=>{}); }
-        audioOverlay.style.display = 'none';
-      });
+/* === Audio unlock for both video & voiceover (SAFE, NO AUTOPLAY) === */
+audioOverlay.addEventListener('click', () => {
 
+  // 1) Unmute — do NOT play anything
+  if (video) video.muted = false;
+  if (voice) voice.muted = false;
+
+  // 2) Unlock audio context (iOS requirement)
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) {
+      if (!window._audioCtx) window._audioCtx = new AC();
+      if (window._audioCtx.state === "suspended") window._audioCtx.resume();
+    }
+  } catch(e){}
+
+  // 3) Safety pause & reset — ensures nothing plays accidentally
+  try {
+    if (video) {
+      video.pause();
+      if (!isNaN(video.duration)) video.currentTime = 0;
+    }
+    if (voice) {
+      voice.pause();
+      if (!isNaN(voice.duration)) voice.currentTime = 0;
+    }
+  } catch(e){}
+
+  // 4) Remove overlay
+  audioOverlay.style.display = 'none';
+});
       /* ===== Poster 1 (Video) ===== */
       const updateP1 = () => {
         const paused = video.paused;
