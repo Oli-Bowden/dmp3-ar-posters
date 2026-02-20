@@ -70,6 +70,22 @@
       font-size: 22px; z-index: 2000; cursor: pointer; pointer-events: auto; user-select: none;
       padding: 24px; text-align: center;
     }
+
+    /* Spinning ring animation for the Loading AR overlay */
+    .loader-ring {
+      width: 70px;
+      height: 70px;
+      border: 6px solid rgba(255,255,255,0.25);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 12px; /* space above the text */
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
   </style>
 </head>
 
@@ -154,10 +170,12 @@
   <!-- Lightweight loading indicator shown after overlay tap until AR is ready -->
 <div id="loadingIndicator"
      style="position:fixed; inset:0; display:none;
-            background:rgba(0,0,0,0.85); color:#fff;
-            font-size:22px; z-index:1500;
-            align-items:center; justify-content:center;">
-  Loading AR Experience…
+            background:#000; color:#fff;
+            font-size:20px; z-index:1500;
+            display:flex; align-items:center; justify-content:center; 
+            text-align:center; flex-direction:column;">
+  <div class="loader-ring"></div>
+  <div>Loading AR Experience…</div>
 </div>
   
   <!-- =================== GESTURE COMPONENT (rotate + pinch) =================== -->
