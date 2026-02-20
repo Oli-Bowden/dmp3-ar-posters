@@ -154,8 +154,8 @@
   <!-- Lightweight loading indicator shown after overlay tap until AR is ready -->
 <div id="loadingIndicator"
      style="position:fixed; inset:0; display:none;
-            background:#000; color:#fff;
-            font-size:20px; z-index:1500;
+            background:rgba(0,0,0,0.85); color:#fff;
+            font-size:22px; z-index:1500;
             align-items:center; justify-content:center;">
   Loading AR Experience…
 </div>
@@ -294,7 +294,7 @@ audioOverlay.addEventListener('click', async () => {
   audioOverlay.style.display = 'none';
 
   // Show loading animation screen
-  const arLoading = document.getElementById('arLoadingScreen');
+  const arLoading = document.getElementById('loadingIndicator');
   arLoading.style.display = 'flex';
   arLoading.style.opacity = '1';
 
